@@ -1,7 +1,6 @@
 import UIKit
 import SwiftUI
 import ComposeApp
-import shared // your KMP shared module
 
 
 struct ComposeView: UIViewControllerRepresentable {
