@@ -19,21 +19,27 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. Build the KMP iOS framework
+      # 3. Make gradlew executable
+      # This step is crucial to fix the "Permission denied" error.
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # 4. Build the KMP iOS framework
+      # Updated the command to specifically target the composeApp module.
       - name: Build shared iOS framework
         run: ./gradlew :composeApp:assembleDebugXCFramework
 
-      # 4. Install CocoaPods dependencies
+      # 5. Install CocoaPods dependencies
       - name: Install Pods
         run: |
           cd iosApp
           pod install
 
-      # 5. Set up Xcode
+      # 6. Set up Xcode
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      # 6. Build iOS app (no signing)
+      # 7. Build iOS app (no signing)
       - name: Build iOS App
         run: |
           xcodebuild \
@@ -44,14 +50,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      # 7. Package into IPA
+      # 8. Package into IPA
       - name: Create IPA
         run: |
           mkdir -p Payload
           cp -r iosApp/build/Debug-iphoneos/*.app Payload/
           zip -r iosApp.ipa Payload
 
-      # 8. Upload IPA as artifact
+      # 9. Upload IPA as artifact
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
