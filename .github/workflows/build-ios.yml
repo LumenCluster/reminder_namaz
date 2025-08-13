@@ -35,15 +35,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 5) Build XCFrameworks for both modules (Release)
-      - name: Build Kotlin XCFrameworks (Release)
-        run: ./gradlew :shared:assembleReleaseXCFramework :composeApp:assembleReleaseXCFramework
+      # 5) Build XCFramework for composeApp (Release)
+      - name: Build Kotlin XCFramework (Release)
+        run: ./gradlew :composeApp:assembleReleaseXCFramework
 
       # 6) Verify expected XCFramework output dirs (Release)
       - name: Verify XCFramework outputs
         run: |
-          echo "📦 shared:"
-          ls -R shared/build/compose/binaries/release/xcode-frameworks || exit 1
           echo "📦 composeApp:"
           ls -R composeApp/build/compose/binaries/release/xcode-frameworks || exit 1
 
@@ -51,11 +49,10 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      # 8) Build iOS app with prebuilt frameworks
+      # 8) Build iOS app with prebuilt framework
       - name: Build iOS App (Release)
         run: |
           cd iosApp
-          # Skip Gradle in Xcode script phase and rely on prebuilt frameworks above
           export OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES
           xcodebuild \
             -scheme iosApp \
@@ -70,7 +67,7 @@ jobs:
         run: |
           cd iosApp
           mkdir -p Payload
-          cp -r build/Release-iphoneos/NamazReminder.app Payload/
+          cp -r build/Release-iphoneos/*.app Payload/
           zip -r iosApp.ipa Payload
 
       # 10) Upload artifact
