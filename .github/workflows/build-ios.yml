@@ -8,62 +8,72 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      # 1) Checkout
       - name: Checkout source
         uses: actions/checkout@v4
 
+      # 2) Cache Gradle + Kotlin/Native
+      - name: Cache Gradle & Kotlin/Native
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 3) JDK 21
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
+      # 4) Make Gradle wrapper executable
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Kotlin XCFramework
-        run: ./gradlew :composeApp:assembleReleaseXCFramework
+      # 5) Build XCFrameworks for both modules (Release)
+      - name: Build Kotlin XCFrameworks (Release)
+        run: ./gradlew :shared:assembleReleaseXCFramework :composeApp:assembleReleaseXCFramework
 
-      - name: Locate XCFramework
-        id: find_xc
+      # 6) Verify expected XCFramework output dirs (Release)
+      - name: Verify XCFramework outputs
         run: |
-          XC_PATH=$(find composeApp/build -name "*.xcframework" -type d | head -n 1)
-          echo "XC_PATH=$XC_PATH" >> $GITHUB_ENV
-          echo "Found XCFramework at: $XC_PATH"
+          echo "📦 shared:"
+          ls -R shared/build/compose/binaries/release/xcode-frameworks || exit 1
+          echo "📦 composeApp:"
+          ls -R composeApp/build/compose/binaries/release/xcode-frameworks || exit 1
 
-      - name: Copy XCFramework into Xcode project
-        run: |
-          mkdir -p iosApp/Frameworks
-          cp -R "$XC_PATH" iosApp/Frameworks/
-
-      - name: Add XCFramework to Xcode project
-        run: |
-          cd iosApp
-          FRAMEWORK_PATH="Frameworks/$(basename $XC_PATH)"
-          echo "Adding $FRAMEWORK_PATH to iosApp.xcodeproj..."
-          /usr/libexec/PlistBuddy -c "Add :objects:Frameworks path $FRAMEWORK_PATH" iosApp.xcodeproj/project.pbxproj || echo "Skipping if already exists"
-
+      # 7) Select Xcode
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
+      # 8) Build iOS app with prebuilt frameworks
       - name: Build iOS App (Release)
         run: |
           cd iosApp
+          # Skip Gradle in Xcode script phase and rely on prebuilt frameworks above
           export OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES
           xcodebuild \
             -scheme iosApp \
             -project iosApp.xcodeproj \
-            -sdk iphoneos \
             -configuration Release \
+            -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      # 9) Package unsigned .ipa
       - name: Create IPA
         run: |
           cd iosApp
           mkdir -p Payload
-          cp -r build/Release-iphoneos/*.app Payload/
+          cp -r build/Release-iphoneos/NamazReminder.app Payload/
           zip -r iosApp.ipa Payload
 
+      # 10) Upload artifact
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
