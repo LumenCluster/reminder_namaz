@@ -21,7 +21,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build shared iOS framework
-        run: ./gradlew :composeApp:assembleDebugXCFramework
+        run: ./gradlew :composeApp:assembleXCFramework --stacktrace
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
