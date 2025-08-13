@@ -8,50 +8,47 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      # 1 Checkout source
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # 2 Set up JDK 21 for Gradle
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3 Make gradlew executable
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4 Build the shared iOS XCFramework (Release)
-      - name: Build shared iOS Release framework
-        run: ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
+      # Build both shared and composeApp modules
+      - name: Build Kotlin modules
+        run: |
+          ./gradlew :shared:linkReleaseFrameworkIosArm64
+          ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
 
-      # 5 Select Xcode
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      # 6 Build the iOS app (Release)
       - name: Build iOS App (Release)
         run: |
+          cd iosApp
           xcodebuild \
             -scheme iosApp \
-            -project iosApp/iosApp.xcodeproj \
+            -project iosApp.xcodeproj \
             -sdk iphoneos \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      # 7 Create IPA
       - name: Create IPA
         run: |
+          cd iosApp
           mkdir -p Payload
-          cp -r iosApp/build/Release-iphoneos/*.app Payload/
+          cp -r build/Release-iphoneos/*.app Payload/
           zip -r iosApp.ipa Payload
 
-      # 8 Upload IPA
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: iosApp-ipa
-          path: iosApp.ipa
+          path: iosApp/iosApp.ipa
