@@ -20,11 +20,15 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Build both shared and composeApp modules
       - name: Build Kotlin modules
         run: |
           ./gradlew :shared:linkReleaseFrameworkIosArm64
           ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
+
+      - name: Verify Frameworks Exist
+        run: |
+          ls -R ../shared/build/xcode-frameworks
+          ls -R ../composeApp/build/xcode-frameworks
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
@@ -32,6 +36,7 @@ jobs:
       - name: Build iOS App (Release)
         run: |
           cd iosApp
+          export OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES
           xcodebuild \
             -scheme iosApp \
             -project iosApp.xcodeproj \
