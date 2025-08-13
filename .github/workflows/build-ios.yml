@@ -8,71 +8,50 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      # 1) Checkout
+      # 1️⃣ Checkout source
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # 2) Cache Gradle + Kotlin/Native
-      - name: Cache Gradle & Kotlin/Native
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.konan
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # 3) JDK 21
+      # 2️⃣ Set up JDK 21 for Gradle
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # 4) Make Gradle wrapper executable
+      # 3️⃣ Make gradlew executable
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 5) Build XCFramework for composeApp (Release)
-      - name: Build Kotlin XCFramework (Release)
-        run: ./gradlew :composeApp:assembleReleaseXCFramework
+      # 4️⃣ Build the shared iOS XCFramework (Release)
+      - name: Build shared iOS Release framework
+        run: ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
 
-      # 6) Verify expected XCFramework output dirs (Release)
-      - name: Verify XCFramework outputs
-        run: |
-          echo "📦 composeApp:"
-          ls -R composeApp/build/compose/binaries/release/xcode-frameworks || exit 1
-
-      # 7) Select Xcode
+      # 5️⃣ Select Xcode
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      # 8) Build iOS app with prebuilt framework
+      # 6️⃣ Build the iOS app (Release)
       - name: Build iOS App (Release)
         run: |
-          cd iosApp
-          export OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES
           xcodebuild \
             -scheme iosApp \
-            -project iosApp.xcodeproj \
-            -configuration Release \
+            -project iosApp/iosApp.xcodeproj \
             -sdk iphoneos \
+            -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      # 9) Package unsigned .ipa
+      # 7️⃣ Create IPA
       - name: Create IPA
         run: |
-          cd iosApp
           mkdir -p Payload
-          cp -r build/Release-iphoneos/*.app Payload/
+          cp -r iosApp/build/Release-iphoneos/*.app Payload/
           zip -r iosApp.ipa Payload
 
-      # 10) Upload artifact
+      # 8️⃣ Upload IPA
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: iosApp-ipa
-          path: iosApp/iosApp.ipa
+          path: iosApp.ipa
