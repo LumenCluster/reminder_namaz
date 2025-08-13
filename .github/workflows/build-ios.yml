@@ -20,15 +20,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # Build only composeApp module
       - name: Build Kotlin modules
-        run: |
-          ./gradlew :shared:linkReleaseFrameworkIosArm64
-          ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
+        run: ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
 
-      - name: Verify Frameworks Exist
-        run: |
-          ls -R ../shared/build/xcode-frameworks
-          ls -R ../composeApp/build/xcode-frameworks
+      - name: Verify Framework
+        run: ls -R composeApp/build/xcode-frameworks
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
