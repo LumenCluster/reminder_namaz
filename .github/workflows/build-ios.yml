@@ -20,12 +20,27 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Build only composeApp module
-      - name: Build Kotlin modules
-        run: ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
+      - name: Build Kotlin XCFramework
+        run: ./gradlew :composeApp:assembleReleaseXCFramework
 
-      - name: Verify Framework
-        run: ls -R composeApp/build/xcode-frameworks
+      - name: Locate XCFramework
+        id: find_xc
+        run: |
+          XC_PATH=$(find composeApp/build -name "*.xcframework" -type d | head -n 1)
+          echo "XC_PATH=$XC_PATH" >> $GITHUB_ENV
+          echo "Found XCFramework at: $XC_PATH"
+
+      - name: Copy XCFramework into Xcode project
+        run: |
+          mkdir -p iosApp/Frameworks
+          cp -R "$XC_PATH" iosApp/Frameworks/
+
+      - name: Add XCFramework to Xcode project
+        run: |
+          cd iosApp
+          FRAMEWORK_PATH="Frameworks/$(basename $XC_PATH)"
+          echo "Adding $FRAMEWORK_PATH to iosApp.xcodeproj..."
+          /usr/libexec/PlistBuddy -c "Add :objects:Frameworks path $FRAMEWORK_PATH" iosApp.xcodeproj/project.pbxproj || echo "Skipping if already exists"
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
