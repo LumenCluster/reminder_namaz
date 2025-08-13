@@ -1,43 +1,31 @@
 name: Build iOS IPA
 
 on:
-  workflow_dispatch: # manual trigger
+  workflow_dispatch:
 
 jobs:
   build-ios:
     runs-on: macos-latest
 
     steps:
-      # 1. Checkout the repo
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # 2. Set up Java for Gradle (KMP build)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. Make gradlew executable
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4. Build the KMP iOS framework
       - name: Build shared iOS framework
         run: ./gradlew :composeApp:assembleDebugXCFramework
 
-      # 5. Install CocoaPods dependencies
-      - name: Install Pods
-        run: |
-          cd iosApp
-          pod install
-
-      # 6. Set up Xcode
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      # 7. Build iOS app (no signing)
       - name: Build iOS App
         run: |
           xcodebuild \
@@ -48,14 +36,12 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      # 8. Package into IPA
       - name: Create IPA
         run: |
           mkdir -p Payload
           cp -r iosApp/build/Debug-iphoneos/*.app Payload/
           zip -r iosApp.ipa Payload
 
-      # 9. Upload IPA as artifact
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
