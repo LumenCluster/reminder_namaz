@@ -25,7 +25,6 @@ jobs:
         run: chmod +x gradlew
 
       # 4. Build the KMP iOS framework
-      # Updated the command to specifically target the composeApp module.
       - name: Build shared iOS framework
         run: ./gradlew :composeApp:assembleDebugXCFramework
 
