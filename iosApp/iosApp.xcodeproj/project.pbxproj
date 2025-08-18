@@ -118,8 +118,11 @@
 		iosAppProjectBuildConfigList = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
+				iosAppDebug,
+				iosAppRelease,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
