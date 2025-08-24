@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -11,6 +12,8 @@ plugins {
 
 kotlin {
 //    tasks.create("testClasses")
+    val xcframework = XCFramework()
+
     jvmToolchain(21) // ⬅️ This is even better: sets JDK version for compilation
     androidTarget()
     listOf(
@@ -21,6 +24,8 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            xcframework.add(this) // ✅ Add each framework to the XCFramework bundle
+
         }
     }
 
